@@ -1,0 +1,154 @@
+body {
+  margin: 0;
+  font-family: system-ui, "Microsoft YaHei", sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 4px 0 10px;
+}
+
+a {
+  color: #1e5bd8;
+}
+
+.back {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #555;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+button {
+  padding: 4px 10px;
+}
+
+button.active {
+  background: #1e6eff;
+  color: #fff;
+  border: 1px solid #1e6eff;
+}
+
+#pad {
+  margin-top: 10px;
+}
+
+#pad button {
+  min-width: 40px;
+  min-height: 34px;
+}
+
+#status {
+  font-size: 14px;
+  margin: 6px 0 2px;
+}
+
+#message {
+  min-height: 1.4em;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+#message.success {
+  color: #1a7f37;
+  font-weight: bold;
+}
+
+#message.error,
+.error-text {
+  color: #c62828;
+}
+
+#board-wrap {
+  width: 100%;
+}
+
+#board {
+  display: block;
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+  outline: none;
+}
+
+#board.busy {
+  opacity: 0.4;
+  cursor: progress;
+}
+
+details {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+details ul {
+  margin: 6px 0;
+}
+
+.game-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 12px 0 20px;
+}
+
+.game-card {
+  display: block;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.game-card:hover {
+  border-color: #1e6eff;
+}
+
+.game-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.game-en {
+  font-size: 13px;
+  font-weight: normal;
+  color: #777;
+}
+
+.game-intro {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.game-meta {
+  font-size: 12px;
+  color: #777;
+}
+
+.game-saved {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #1a7f37;
+}

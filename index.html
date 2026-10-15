@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nikoli 谜题合集</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Nikoli 谜题合集</h1>
+      <p class="subtitle">所有题目均由程序随机生成，保证唯一解且可纯逻辑推出。选择一种谜题开始：</p>
+      <div id="games" class="game-list"></div>
+
+      <div class="toolbar code-entry">
+        <label>直接输入题号 <input id="code" size="22" spellcheck="false" placeholder="例如 SD-9x9-M-123456" /></label>
+        <button id="btn-go">开始</button>
+        <span id="code-error" class="error-text"></span>
+      </div>
+    </main>
+    <script type="module" src="src/app/home.js"></script>
+  </body>
+</html>

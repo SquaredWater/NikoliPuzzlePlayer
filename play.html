@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>谜题</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <p class="back"><a href="index.html">← 返回主页</a></p>
+      <h1 id="title">谜题</h1>
+
+      <div class="toolbar">
+        <label>尺寸 <select id="size"></select></label>
+        <label>难度 <select id="difficulty"></select></label>
+        <button id="btn-new">换题</button>
+      </div>
+
+      <div class="toolbar">
+        <button id="btn-undo" title="Ctrl+Z">撤销</button>
+        <button id="btn-redo" title="Ctrl+Y">重做</button>
+        <button id="btn-reset">重置盘面</button>
+        <button id="btn-check">检查</button>
+        <button id="btn-hint">提示</button>
+        <button id="btn-reveal">显示答案</button>
+        <label><input type="checkbox" id="opt-errors" checked /> 标出违规之处</label>
+      </div>
+
+      <div class="toolbar">
+        <label>题号 <input id="code" size="20" spellcheck="false" /></label>
+        <button id="btn-load">载入题号</button>
+        <button id="btn-copy">复制题号</button>
+      </div>
+
+      <div id="status"></div>
+      <div id="message"></div>
+
+      <div id="board-wrap">
+        <canvas id="board" tabindex="0"></canvas>
+      </div>
+      <div id="pad" class="toolbar"></div>
+
+      <details open>
+        <summary>规则与操作</summary>
+        <ul id="rules"></ul>
+        <ul id="controls"></ul>
+        <ul>
+          <li>Ctrl+Z 撤销，Ctrl+Y / Ctrl+Shift+Z 重做。</li>
+          <li>题号可分享，相同题号总是生成同一道题；进度自动保存在本机浏览器。</li>
+        </ul>
+      </details>
+    </main>
+    <script type="module" src="src/app/play.js"></script>
+  </body>
+</html>
