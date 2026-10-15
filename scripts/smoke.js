@@ -1,7 +1,8 @@
 // 浏览器冒烟测试（需要本地 Chrome，并先运行 node server.js 8765）：
 //   node scripts/smoke.js <游戏id> [题号]
+// Chrome 不在默认位置时，用环境变量 CHROME 指定可执行文件路径。
 // 依次：打开主页 → 打开游戏页 → 随机点击盘面 → 提示 ×5 → 检查 → 显示答案，
-// 每步截图到 %TEMP%/opencode/smoke/，并输出页面上的状态文字与 JS 异常。
+// 每步截图到系统临时目录下的 nikoli-smoke/，并输出页面上的状态文字与 JS 异常。
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,8 +11,12 @@ import { tmpdir } from 'node:os';
 const game = process.argv[2] || 'sudoku';
 const code = process.argv[3] || '';
 const port = Number(process.env.PORT || 8765);
-const chromePath = process.env.CHROME || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const outDir = join(process.env.TEMP || tmpdir(), 'opencode', 'smoke');
+const defaultChrome = {
+  win32: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  darwin: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+}[process.platform] || 'google-chrome';
+const chromePath = process.env.CHROME || defaultChrome;
+const outDir = join(tmpdir(), 'nikoli-smoke');
 mkdirSync(outDir, { recursive: true });
 const debugPort = 9300 + Math.floor(Math.random() * 600);
 
@@ -22,6 +27,10 @@ const chrome = spawn(chromePath, [
   `--user-data-dir=${join(outDir, `profile-${debugPort}`)}`,
   'about:blank',
 ]);
+chrome.on('error', (err) => {
+  console.error(`无法启动 Chrome（${chromePath}）：${err.message}\n请用环境变量 CHROME 指定 Chrome 路径。`);
+  process.exit(1);
+});
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets = [];
 for (let i = 0; i < 60 && !targets.length; i++) {

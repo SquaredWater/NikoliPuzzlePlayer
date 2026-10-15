@@ -98,4 +98,4 @@ export default {
 - `node --test`：`test/games.test.js` 会自动对每个已实现的游戏检查：可复现、唯一解、答案判定、提示走完全程、撤销/重做等。
   只测一个游戏：PowerShell 下 `$env:GAME='sudoku'; node --test test/games.test.js`。
 - `node scripts/bench.js <id> [数量]`：各尺寸/难度的生成耗时与难度分布。
-- `node scripts/smoke.js <id>`：浏览器冒烟测试（需先 `node server.js 8765`），截图在 `%TEMP%/opencode/smoke/`。
+- `node scripts/smoke.js <id>`：浏览器冒烟测试（需先 `node server.js 8765`），截图在系统临时目录下的 `nikoli-smoke/`；Chrome 不在默认位置时用环境变量 `CHROME` 指定路径。

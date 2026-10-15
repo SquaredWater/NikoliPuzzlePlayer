@@ -4,9 +4,36 @@
   "private": true,
   "type": "module",
   "description": "程序生成 Nikoli 经典纸笔谜题（保证唯一解）并在浏览器中游玩",
+  "license": "MIT",
+  "author": "Feukkor",
+  "homepage": "https://squaredwater.github.io/NikoliPuzzlePlayer/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SquaredWater/NikoliPuzzlePlayer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SquaredWater/NikoliPuzzlePlayer/issues"
+  },
+  "keywords": [
+    "nikoli",
+    "puzzle",
+    "sudoku",
+    "kakuro",
+    "slitherlink",
+    "nurikabe",
+    "akari",
+    "hashiwokakero",
+    "hitori",
+    "masyu",
+    "shikaku"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "bench": "node scripts/bench.js"
+    "bench": "node scripts/bench.js",
+    "smoke": "node scripts/smoke.js"
   }
 }
