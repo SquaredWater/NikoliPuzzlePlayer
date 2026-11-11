@@ -114,9 +114,12 @@ export function propagate(model, D, maxLevel, stats = null) {
         }
       }
     }
-    if (maxLevel >= TRIAL_LEVEL && trial(model, D)) {
-      if (stats) note(stats, TRIAL_LEVEL);
-      continue;
+    if (maxLevel >= TRIAL_LEVEL) {
+      if (stats && stats.stall < 0) stats.stall = openCount(D);
+      if (trial(model, D, stats)) {
+        if (stats) note(stats, TRIAL_LEVEL);
+        continue;
+      }
     }
     break;
   }
@@ -130,7 +133,13 @@ function note(stats, level) {
   if (level > stats.level) stats.level = level;
 }
 
-function trial(model, D) {
+function openCount(D) {
+  let n = 0;
+  for (let v = 0; v < D.dom.length; v++) if (!isSingle(D.dom[v])) n++;
+  return n;
+}
+
+function trial(model, D, stats = null) {
   const vars = [];
   for (let v = 0; v < model.size; v++) if (!D.isFixed(v)) vars.push(v);
   vars.sort((a, b) => popcount(D.dom[a]) - popcount(D.dom[b]));
@@ -144,9 +153,11 @@ function trial(model, D) {
       const T = D.clone();
       T.set(v, val);
       propagate(model, T, TRIAL_LEVEL - 1);
+      if (stats) stats.tried++;
       if (T.bad) {
         D.remove(v, val);
         changed = true;
+        if (stats) stats.refuted++;
         if (D.bad) return true;
       }
     }
@@ -156,15 +167,17 @@ function trial(model, D) {
 
 /**
  * 用不超过 maxLevel 的推理求解。
- * 返回 { solved, contradiction, level, steps, values, order, domains }
+ * 返回 { solved, contradiction, level, steps, values, order, domains, stall, tried, refuted }
  *   level：实际用到的最高等级；steps[k]：k 级推理生效的次数；
- *   order：变量被确定的先后顺序（用于“提示”）；values：确定的变量取值，未确定为 -1。
+ *   order：变量被确定的先后顺序（用于“提示”）；values：确定的变量取值，未确定为 -1；
+ *   stall：第一次不得不试探时还有多少变量未定（没试探过为 -1）；
+ *   tried / refuted：试探过多少个“变量取某值”的假设、其中多少个被推翻。
  */
 export function logicSolve(model, maxLevel = TRIAL_LEVEL) {
   const D = new Domains(model.domains(), true);
   for (let v = 0; v < model.size; v++) if (D.isFixed(v)) D.order.push(v);
   if (D.dom.some((d) => d === 0)) D.bad = true;
-  const stats = { level: 0, steps: [0, 0, 0, 0] };
+  const stats = { level: 0, steps: [0, 0, 0, 0], stall: -1, tried: 0, refuted: 0 };
   const ok = !D.bad && propagate(model, D, maxLevel, stats);
   return {
     solved: ok && D.allFixed(),
@@ -174,6 +187,9 @@ export function logicSolve(model, maxLevel = TRIAL_LEVEL) {
     values: D.values(),
     order: D.order,
     domains: D.dom,
+    stall: stats.stall,
+    tried: stats.tried,
+    refuted: stats.refuted,
   };
 }
 

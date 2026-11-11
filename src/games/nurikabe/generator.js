@@ -1,11 +1,11 @@
-// 数墙生成：随机生长若干互不相邻的岛（黑格始终连通）→ 消除 2×2 黑块 → 每岛随机放一个数字
+﻿// 数墙生成：随机生长若干互不相邻的岛（黑格始终连通）→ 消除 2×2 黑块 → 每岛随机放一个数字
 // → 逻辑求解。卡住时只做局部修补后重试：
 //   若能找到另一个解，就在两解不同的格子上改动答案（涂白成新岛 / 并入岛，或涂黑使岛缩小、拆分）
 //   或把数字移过去，从而排除这个解；
 //   否则（可能唯一但超出难度）在未确定的区域里随机改动一格。
 // 修补轮数有总上限；实在不行就退回小岛配置，最后用必然可解的格点阵兜底。
 import { createRng } from '../../engine/rng.js';
-import { assertParams, DIFFICULTY_LEVELS, pickGraded } from '../../engine/generate.js';
+import { assertParams, DIFFICULTY_LEVELS, gradeOf, pickGraded } from '../../engine/generate.js';
 import { Domains, logicSolve, propagate } from '../../engine/logic.js';
 import { BUDGET_EXCEEDED, buildModel, geometry, isValidAnswer } from './model.js';
 
@@ -442,6 +442,6 @@ export function generatePuzzle({ width: W, height: H, difficulty, seed }) {
     clues,
     solution,
     order: Array.from(result.order).filter((i) => !clues[i]),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }

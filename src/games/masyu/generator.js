@@ -1,11 +1,11 @@
-// 珍珠出题：
+﻿// 珍珠出题：
 //   1. 在 (W-1)×(H-1) 个“格子中心之间的小方块”上生长一个单连通、无洞、无对角接触的区域，
 //      区域边界就是经过格子中心的单一回路；
 //   2. 在回路上放全部候选珍珠，若逻辑解不出，就在未确定的边附近翻转小方块做局部修补；
 //   3. 按随机顺序删珍珠，删后仍能在难度等级内逻辑解出才保留删除。
 // 多次失败时逐级放宽难度，最后用固定种子的兜底回路。
 import { createRng } from '../../engine/rng.js';
-import { assertParams, DIFFICULTY_LEVELS, minimizeClues, pickGraded } from '../../engine/generate.js';
+import { assertParams, DIFFICULTY_LEVELS, gradeOf, minimizeClues, pickGraded } from '../../engine/generate.js';
 import { logicSolve } from '../../engine/logic.js';
 import { BLACK, WHITE, buildModel, layoutOf } from './model.js';
 
@@ -365,6 +365,6 @@ export function generatePuzzle({ width, height, difficulty, seed }) {
     pearls,
     solution: sol,
     order: result.order.filter((e) => sol[e] === 1),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }

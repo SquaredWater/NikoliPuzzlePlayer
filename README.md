@@ -50,8 +50,11 @@ npm start        # 打开 http://localhost:8080
 | 简单 | 只用最直接的规则（如唯一候选） |
 | 中等 | 需要组合推理（如区块排除、连通性、局部枚举） |
 | 困难 | 需要试探：假设某一步成立，推出矛盾后排除 |
+| 专家 | 困难题里最深的：从 4 道困难题中挑首次试探时未定格最多的一道 |
 
-题号格式为 `前缀-宽x高-难度-种子`，例如 `SD-9x9-M-123456`。同一个题号总是生成同一道题，可以发给别人一起玩。
+题号格式为 `前缀-宽x高-难度-种子`，例如 `SD-9x9-M-123456`，难度字母为 `E` / `M` / `H` / `X`。同一个题号总是生成同一道题，可以发给别人一起玩。
+
+小盘面（例如 4×4 数独）上更高级的推理往往根本用不上，这时生成器会退而求其次，页面会如实标出“实际约简单/中等”，换个更大的尺寸才能得到对应难度。
 
 ## 开发
 
@@ -59,15 +62,19 @@ npm start        # 打开 http://localhost:8080
 npm test                          # 运行全部单元测试
 npm run bench                     # 统计生成速度与难度分布
 node scripts/bench.js sudoku 10   # 只测某种谜题，生成 10 道
+npm run build                     # 组装发布目录 dist（加静态资源版本号）
 ```
 
 浏览器冒烟测试需要本机装有 Chrome 和 Node.js 22 以上版本。先运行 `node server.js 8765`，再运行：
 
 ```bash
 npm run smoke -- sudoku           # 或 node scripts/smoke.js <游戏id> [题号]
+WIDTH=390 HEIGHT=844 DEVICE=1 npm run smoke -- sudoku   # 按手机视口检查布局
 ```
 
 Chrome 不在默认位置时，用环境变量 `CHROME` 指定路径。截图保存在系统临时目录下的 `nikoli-smoke/` 中。
+
+推送到 `main` 后由 `.github/workflows/pages.yml` 自动测试、构建并发布到 GitHub Pages（仓库 Settings → Pages 的 Source 需选 GitHub Actions）。
 
 ### 目录结构
 

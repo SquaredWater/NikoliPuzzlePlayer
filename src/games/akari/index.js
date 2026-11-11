@@ -1,11 +1,11 @@
-// 美术馆（Akari / Light Up）规则模块。
+﻿// 美术馆（Akari / Light Up）规则模块。
 // 题目：{ game, width, height, difficulty, seed,
 //        grid: 每格 -1 = 白格，0~4 = 带数字黑格，5 = 无数字黑格,
 //        solution: 每格 1 = 灯泡、0 = 无灯（黑格为 0）, order: 灯泡格按推理先后排列, grade }
 // 盘面状态：{ b: 每格 0 = 空，1 = 灯泡，2 = 点（此处无灯）；黑格恒为 0 }
 // 推理变量：每个白格一个，取值 0 = 无灯，1 = 灯泡。
 import { createRng } from '../../engine/rng.js';
-import { assertParams, DIFFICULTY_LEVELS, minimizeClues, pickGraded } from '../../engine/generate.js';
+import { assertParams, DIFFICULTY_LEVELS, gradeOf, minimizeClues, pickGraded } from '../../engine/generate.js';
 import { countSolutions, logicSolve, popcount } from '../../engine/logic.js';
 
 export const WHITE = -1;
@@ -487,7 +487,7 @@ export function generate({ width, height, difficulty, seed }) {
     grid,
     solution,
     order: Array.from(result.order, (v) => cells[v]).filter((cell) => solution[cell]),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }
 

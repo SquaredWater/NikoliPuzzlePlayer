@@ -1,9 +1,9 @@
-// 数壹（Hitori）规则模块。
+﻿// 数壹（Hitori）规则模块。
 // 题目：{ game, width: n, height: n, difficulty, seed, numbers: 数字[]（1~n）, solution: 0/1[]（1 = 涂黑）,
 //        order: 推理顺序（格子下标）, grade }
 // 盘面状态：{ c: 数组（0 = 未定，1 = 涂黑，2 = 画圈 · 确定为白）}
 import { createRng } from '../../engine/rng.js';
-import { assertParams, DIFFICULTY_LEVELS, pickGraded } from '../../engine/generate.js';
+import { assertParams, DIFFICULTY_LEVELS, gradeOf, pickGraded } from '../../engine/generate.js';
 import { countSolutions, logicSolve, lowBit, popcount } from '../../engine/logic.js';
 import { buildModel, isConnected, layoutOf, samePeers } from './model.js';
 
@@ -181,7 +181,7 @@ export function generate({ width, height, difficulty, seed }) {
     numbers,
     solution,
     order: Array.from(result.order),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }
 

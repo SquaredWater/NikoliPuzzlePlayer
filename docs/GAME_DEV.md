@@ -27,7 +27,7 @@ export default {
 约定：
 
 - `puzzle` 必须是可 JSON 序列化的普通对象（不要用 TypedArray/Map），包含
-  `game`、`width`、`height`、`difficulty`、`seed`、答案，以及建议的 `order`（提示顺序）和 `grade: { level, steps }`。
+  `game`、`width`、`height`、`difficulty`、`seed`、答案，以及建议的 `order`（提示顺序）和 `grade`（用 `gradeOf(result)` 生成）。
   题号 `code` 由外壳添加，生成器不用管。
 - `state` 也必须是可 JSON 序列化的普通对象，且**不可变**：任何修改都返回新对象。
 - 随机性只能来自 `createRng(seed)`（`src/engine/rng.js`），相同参数必须生成完全相同的题。
@@ -55,6 +55,12 @@ countSolutions(model, { limit, nodeLimit }) → { count, aborted, solution }
 
 `D`（Domains）常用方法：`D.dom[v]`、`D.isFixed(v)`、`D.value(v)`、`D.set(v, val)`、`D.remove(v, val)`、`D.restrict(v, mask)`。
 
+规则会被调用非常多次（试探时每个假设都要重新传播一遍），值得做增量优化，但要注意两点：
+
+- 规则若要记住“哪些已经处理过”，状态必须放在 `D.aux`（一个 TypedArray，随 `D.clone()` 复制），
+  **不能**放在模型闭包里——试探和计数会克隆出许多份 `D`，它们的进度各不相同。参见数独的 `nakedSingles`。
+- 优化不能改变推理结果和规则生效的次数，否则同一个题号会生成不同的题。改完后请对比改动前后的题目是否完全一致。
+
 难度约定（`src/engine/generate.js` 的 `DIFFICULTY_LEVELS`）：
 
 | 难度 | 允许的最高推理等级 | 期望实际用到的等级 |
@@ -62,6 +68,12 @@ countSolutions(model, { limit, nodeLimit }) → { count, aborted, solution }
 | easy | 1 | 1 |
 | medium | 2 | 2 |
 | hard | 3（试探） | 3 |
+
+生成器只需要实现这三档。第四档 `expert` 由 `generatePuzzle(rules, params)` 统一包装：
+生成 `EXPERT_CANDIDATES` 道困难题，取 `gradeScore` 最高的一道（主要看 `grade.stall`——第一次不得不试探时还剩多少变量未定）。
+页面和 Worker 都通过 `generatePuzzle` 出题；`puzzle.grade` 请用 `gradeOf(result)` 生成，这样会带上 `stall` 等信息。
+
+小盘面上达不到 `minLevel` 时，`pickGraded` 会返回最接近的一道；`actualDifficulty(puzzle)` 据此报告实际难度，页面会标出来。
 
 常用生成套路（见数独）：
 
@@ -92,6 +104,8 @@ export default {
 - `api`：`puzzle()`、`state()`、`apply(newState, message?)`（提交新状态，返回是否变化）、`redraw()`、`message(text, kind?)`。
 - 交互的临时状态（选中格、拖动中等）放在 `ui` 里，由 `draw` 读取。
 - 共用工具：`src/app/draw.js`（网格、文字、圆、叉、最近格线边等；颜色请用其中的 `COLORS`，与界面主题一致）、`src/app/digits.js`（数字键、笔记）。
+- 盘面的格子大小由 `src/app/play.js` 的 `layout()` 按屏幕决定（手机竖屏占满屏宽，横屏时按键移到盘面右侧），
+  `draw` 和输入都只用“格”为单位，不要假设 `unit` 的具体数值；手机上一格可能只有 16–20 像素，点击判定要留足余量。
 
 ## 3. 测试
 

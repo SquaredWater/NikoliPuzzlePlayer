@@ -1,9 +1,9 @@
-// 数独规则模块。
+﻿// 数独规则模块。
 // 题目：{ game, width: n, height: n, difficulty, seed, box: [宫高, 宫宽], givens: 数字[]（0 为空）,
 //        solution: 数字[], order: 推理顺序（格子下标）, grade }
 // 盘面状态：{ v: 数字[]（0 为空，提示格不填）, notes: 位掩码[]（第 k 位 = 数字 k+1）}
 import { createRng } from '../../engine/rng.js';
-import { assertParams, DIFFICULTY_LEVELS, minimizeClues, pickGraded } from '../../engine/generate.js';
+import { assertParams, DIFFICULTY_LEVELS, gradeOf, minimizeClues, pickGraded } from '../../engine/generate.js';
 import { countSolutions, lowBit, logicSolve, popcount } from '../../engine/logic.js';
 
 const BOXES = { 4: [2, 2], 6: [2, 3], 9: [3, 3] };
@@ -297,7 +297,7 @@ export function generate({ width, height, difficulty, seed }) {
     givens,
     solution,
     order: result.order.filter((cell) => !givens[cell]),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }
 

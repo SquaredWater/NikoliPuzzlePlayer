@@ -2,12 +2,19 @@
 // 负责工具栏、生成（Web Worker）、存档、计时、画布尺寸与指针/键盘事件分发；
 // 具体规则与绘制由 games/<id>/index.js 与 games/<id>/view.js 提供。
 import { Session } from '../engine/session.js';
-import { DIFFICULTIES, DIFFICULTY_LABELS } from '../engine/generate.js';
+import { actualDifficulty, DIFFICULTIES, DIFFICULTY_LABELS, EXPERT_CANDIDATES, generatePuzzle } from '../engine/generate.js';
 import { randomSeed } from '../engine/rng.js';
 import { formatCode, getGame, parseCode } from '../games/registry.js';
 import { askConfirm, icon, initUi } from './ui.js';
+import { loadGame } from './load.js';
 
 const PAD = 4;
+const MIN_UNIT = 16;
+const MAX_UNIT = 56;
+// 横屏手机：盘面与按键左右并排（断点与 style.css 文末的响应式规则一致）
+const sideBySide = window.matchMedia('(orientation: landscape) and (max-height: 560px)');
+// 并排时右侧一栏至少留这么宽，放得下数字键盘和操作栏
+const TOOLS_MIN_WIDTH = 280;
 const PREFS_KEY = 'nikoli.prefs';
 
 const $ = (id) => document.getElementById(id);
@@ -75,7 +82,7 @@ function requestPuzzle(p) {
     const runLocal = () =>
       setTimeout(() => {
         try {
-          resolve(rules.generate(p));
+          resolve(generatePuzzle(rules, p));
         } catch (err) {
           reject(err);
         }
@@ -91,7 +98,7 @@ let latestRequest = 0;
 async function startNew(p) {
   const ticket = ++latestRequest;
   generating = true;
-  setMessage('正在生成题目…');
+  setMessage(p.difficulty === 'expert' ? `正在生成 ${EXPERT_CANDIDATES} 道困难题，挑最难的一道…` : '正在生成题目…');
   updateUI();
   draw();
   const t0 = performance.now();
@@ -100,7 +107,12 @@ async function startNew(p) {
     if (ticket !== latestRequest) return;
     puzzle.code = formatCode(meta.id, puzzle);
     setSession(new Session(rules, puzzle));
-    setMessage(`已生成新题（${Math.round(performance.now() - t0)} ms）`);
+    const fallback = actualDifficulty(puzzle);
+    if (fallback) {
+      setMessage(`这道题在 ${p.width}×${p.height} 上推不出「${DIFFICULTY_LABELS[p.difficulty]}」级别的复杂度，实际接近${DIFFICULTY_LABELS[fallback]}，换个更大的尺寸会更难。`);
+    } else {
+      setMessage(`已生成新题（${Math.round(performance.now() - t0)} ms）`);
+    }
   } catch (err) {
     if (ticket !== latestRequest) return;
     setMessage(`生成失败：${err.message}`, 'error');
@@ -219,15 +231,26 @@ function layout() {
   const { cols, rows } = view.size(session.puzzle);
   const styles = getComputedStyle(els.wrap);
   const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+  const padTop = parseFloat(styles.paddingTop);
   const padBottom = parseFloat(styles.paddingBottom);
   // 盘面卡片会收缩贴合画布，所以可用宽度取外层面板
   const pane = els.wrap.parentElement;
-  const availW = Math.max(160, pane.clientWidth - padX - PAD * 2);
-  // 盘面下方还有消息条、数字键盘和操作栏，把它们的高度从视口里预留出来
-  const below = pane.getBoundingClientRect().bottom - els.wrap.getBoundingClientRect().bottom + padBottom;
-  const top = els.canvas.getBoundingClientRect().top + window.scrollY;
-  const availH = Math.max(240, window.innerHeight - top - below - 16 - PAD * 2);
-  unit = Math.max(16, Math.min(56, Math.floor(availW / cols), Math.floor(availH / rows)));
+  const wrapRect = els.wrap.getBoundingClientRect();
+  const top = wrapRect.top + window.scrollY + padTop;
+  let availW;
+  let availH;
+  if (sideBySide.matches) {
+    // 按键在盘面右侧：宽度要给右栏留位置，高度只受视口限制（盘面必须整个看得见）
+    const gap = parseFloat(getComputedStyle(pane).columnGap) || 0;
+    availW = pane.clientWidth - TOOLS_MIN_WIDTH - gap - padX - PAD * 2;
+    availH = window.innerHeight - top - padBottom - 8 - PAD * 2;
+  } else {
+    availW = pane.clientWidth - padX - PAD * 2;
+    // 盘面下方还有消息条、数字键盘和操作栏，把它们的高度从视口里预留出来
+    const below = pane.getBoundingClientRect().bottom - wrapRect.bottom + padBottom;
+    availH = Math.max(240, window.innerHeight - top - below - 16 - PAD * 2);
+  }
+  unit = Math.max(MIN_UNIT, Math.min(MAX_UNIT, Math.floor(Math.max(160, availW) / cols), Math.floor(availH / rows)));
   const dpr = window.devicePixelRatio || 1;
   const cssW = Math.ceil(cols * unit) + PAD * 2;
   const cssH = Math.ceil(rows * unit) + PAD * 2;
@@ -296,9 +319,11 @@ function updateStatus() {
   const chips = [
     statusChip(`${p.width}×${p.height} · ${DIFFICULTY_LABELS[p.difficulty]}`, 'grid'),
     statusChip(formatTime(session.elapsedMs), 'timer', 'tonal'),
-    statusChip(`步数 ${session.moves}`),
+    statusChip(`步数 ${session.moves}`, null, 'minor'),
     statusChip(`提示 ${session.hintsUsed}`),
   ];
+  const fallback = actualDifficulty(p);
+  if (fallback) chips.splice(1, 0, statusChip(`实际约${DIFFICULTY_LABELS[fallback]}`, 'info'));
   const progress = session.progress();
   if (progress) chips.push(statusChip(progress));
   if (session.revealed) chips.push(statusChip('已看答案', 'eye', 'warn'));
@@ -565,7 +590,23 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') save();
 });
 window.addEventListener('pagehide', save);
-window.addEventListener('resize', layout);
+
+// 手机上滚动页面时地址栏收起、点输入框时键盘弹出，都会改变视口高度并触发 resize。
+// 这两种情况下重新排版会让盘面忽大忽小，所以触屏设备上宽度没变、高度只是小幅变化（或正在输入）时不重排。
+const coarsePointer = window.matchMedia('(pointer: coarse)');
+let layoutW = window.innerWidth;
+let layoutH = window.innerHeight;
+function onResize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const typing = document.activeElement instanceof HTMLInputElement;
+  if (coarsePointer.matches && w === layoutW && (typing || Math.abs(h - layoutH) < 120)) return;
+  layoutW = w;
+  layoutH = h;
+  layout();
+}
+window.addEventListener('resize', onResize);
+sideBySide.addEventListener('change', layout);
 
 function fillList(el, lines) {
   el.replaceChildren(
@@ -584,8 +625,8 @@ async function init() {
   en.textContent = meta.en;
   els.title.replaceChildren(meta.name, en);
   [rules, view] = await Promise.all([
-    import(`../games/${meta.id}/index.js`).then((m) => m.default),
-    import(`../games/${meta.id}/view.js`).then((m) => m.default),
+    loadGame(meta.id, 'index').then((m) => m.default),
+    loadGame(meta.id, 'view').then((m) => m.default),
   ]);
   fillList($('rules'), meta.rules);
   fillList($('controls'), view.controls || []);

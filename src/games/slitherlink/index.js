@@ -1,9 +1,9 @@
-// 数回规则模块。
+﻿// 数回规则模块。
 // 题目：{ game, width, height, difficulty, seed, clues: 数字[]（-1 为无数字）, solution: 边[]（1 有线）,
 //        order: 推理顺序（边下标）, grade }
 // 盘面状态：{ e: 边[]（0 空、1 线、2 ×）}；边编号见 model.js。
 import { createRng } from '../../engine/rng.js';
-import { assertParams, DIFFICULTY_LEVELS, minimizeClues, pickGraded } from '../../engine/generate.js';
+import { assertParams, DIFFICULTY_LEVELS, gradeOf, minimizeClues, pickGraded } from '../../engine/generate.js';
 import { countSolutions, logicSolve } from '../../engine/logic.js';
 import { BUDGET_EXCEEDED, boundaryEdges, buildModel, cluesFromEdges, geometry } from './model.js';
 
@@ -184,7 +184,7 @@ export function generate({ width: W, height: H, difficulty, seed }) {
     clues,
     solution,
     order: Array.from(result.order),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }
 

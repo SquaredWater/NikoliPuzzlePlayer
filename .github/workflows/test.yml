@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [main]
+    branches-ignore: [main] # main 的测试由 pages.yml 负责，避免重复
   pull_request:
 
 jobs:

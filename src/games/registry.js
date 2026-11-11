@@ -144,7 +144,7 @@ export function isValidSize(game, width, height) {
   return width >= r.min && width <= r.max && height >= r.min && height <= r.max;
 }
 
-const LETTERS = { easy: 'E', medium: 'M', hard: 'H' };
+const LETTERS = { easy: 'E', medium: 'M', hard: 'H', expert: 'X' };
 
 /** 题号：前缀-宽x高-难度-种子，例如 SD-9x9-M-123456 */
 export function formatCode(gameId, { width, height, difficulty, seed }) {
@@ -153,7 +153,7 @@ export function formatCode(gameId, { width, height, difficulty, seed }) {
 
 /** 解析题号；省略前缀时视为 defaultGame。返回 { game, width, height, difficulty, seed } 或 { error }。 */
 export function parseCode(text, defaultGame = null) {
-  const m = /^\s*(?:([A-Za-z]{2})\s*-\s*)?(\d+)\s*[x×*]\s*(\d+)\s*-\s*([EMH])\s*-\s*(\d+)\s*$/i.exec(text || '');
+  const m = /^\s*(?:([A-Za-z]{2})\s*-\s*)?(\d+)\s*[x×*]\s*(\d+)\s*-\s*([EMHX])\s*-\s*(\d+)\s*$/i.exec(text || '');
   if (!m) return { error: '题号格式不正确，应类似 SD-9x9-M-123456' };
   const game = m[1] ? GAMES.find((g) => g.prefix === m[1].toUpperCase()) : getGame(defaultGame);
   if (!game) return { error: `未知的游戏前缀：${m[1]}` };

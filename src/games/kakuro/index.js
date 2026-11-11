@@ -1,9 +1,9 @@
-// 数和规则模块。
+﻿// 数和规则模块。
 // 题目：{ game, width, height, difficulty, seed,
 //        solution: 数字[]（按格子下标，0 为黑格）, across: 和[]（黑格向右的段之和，0 为无）,
 //        down: 和[]（黑格向下的段之和）, order: 推理顺序（格子下标）, grade }
 // 盘面状态：{ v: 数字[]（0 为空，黑格恒为 0）, notes: 位掩码[]（第 k 位 = 数字 k+1）}
-import { assertParams } from '../../engine/generate.js';
+import { assertParams, gradeOf } from '../../engine/generate.js';
 import { countSolutions } from '../../engine/logic.js';
 import { buildModel, buildStruct } from './model.js';
 import { generatePuzzle } from './generator.js';
@@ -28,7 +28,7 @@ export function generate({ width, height, difficulty, seed }) {
     across,
     down,
     order: Array.from(result.order, (v) => S.cells[v]),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }
 

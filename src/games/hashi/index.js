@@ -1,9 +1,9 @@
-// 数桥规则模块。
+﻿// 数桥规则模块。
 // 题目：{ game, width, height, difficulty, seed, islands: [{ r, c, n }]（按行优先排序）,
 //        links: [{ a, b }]（所有互相可见的相邻岛对，a < b）, solution: 每条 link 的桥数, order, grade }
 // 盘面状态：{ b: 每条 link 的桥数（0/1/2）}
 import { createRng } from '../../engine/rng.js';
-import { assertParams, DIFFICULTY_LEVELS, pickGraded } from '../../engine/generate.js';
+import { assertParams, DIFFICULTY_LEVELS, gradeOf, pickGraded } from '../../engine/generate.js';
 import { countSolutions, logicSolve, TRIAL_LEVEL } from '../../engine/logic.js';
 
 // 方向：上、右、下、左
@@ -426,7 +426,7 @@ export function generate({ width, height, difficulty, seed }) {
     links: puzzle.links,
     solution: sol,
     order: Array.from(result.order),
-    grade: { level: result.level, steps: result.steps.slice(1) },
+    grade: gradeOf(result),
   };
 }
 
