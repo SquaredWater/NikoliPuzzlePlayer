@@ -57,7 +57,7 @@ export default {
       const { start, end } = ui.drag;
       const rect = rectFromCorners(start.r, start.c, end.r, end.c);
       const [x, y, w, h] = rectPx(rect, u);
-      ctx.fillStyle = 'rgba(30, 110, 255, 0.22)';
+      ctx.fillStyle = COLORS.preview;
       ctx.fillRect(x, y, w, h);
       ctx.strokeStyle = COLORS.accent;
       ctx.lineWidth = 2;

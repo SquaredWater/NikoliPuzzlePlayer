@@ -3,54 +3,132 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#faf8ff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121318" media="(prefers-color-scheme: dark)" />
     <title>谜题</title>
     <link rel="stylesheet" href="style.css" />
+    <script>
+      // 在首次绘制前应用已保存的主题，避免闪白
+      try {
+        const t = localStorage.getItem('nikoli.theme');
+        document.documentElement.dataset.theme = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      } catch {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
   </head>
   <body>
-    <main>
-      <p class="back"><a href="index.html">← 返回主页</a></p>
-      <h1 id="title">谜题</h1>
-
-      <div class="toolbar">
-        <label>尺寸 <select id="size"></select></label>
-        <label>难度 <select id="difficulty"></select></label>
-        <button id="btn-new">换题</button>
+    <header class="app-bar">
+      <a class="icon-btn" href="index.html" title="返回主页" aria-label="返回主页">
+        <span class="icon" data-icon="back"></span>
+      </a>
+      <h1 id="title" class="app-bar-title">谜题</h1>
+      <div class="app-bar-actions">
+        <button class="icon-btn" type="button" id="btn-rules" title="规则与操作" aria-label="规则与操作">
+          <span class="icon" data-icon="help"></span>
+        </button>
+        <button class="icon-btn" type="button" data-theme-toggle title="切换主题" aria-label="切换主题"></button>
       </div>
+    </header>
 
-      <div class="toolbar">
-        <button id="btn-undo" title="Ctrl+Z">撤销</button>
-        <button id="btn-redo" title="Ctrl+Y">重做</button>
-        <button id="btn-reset">重置盘面</button>
-        <button id="btn-check">检查</button>
-        <button id="btn-hint">提示</button>
-        <button id="btn-reveal">显示答案</button>
-        <label><input type="checkbox" id="opt-errors" checked /> 标出违规之处</label>
-      </div>
+    <main class="play-layout">
+      <section class="board-pane" id="board-pane">
+        <div id="status" class="status-bar"></div>
 
-      <div class="toolbar">
-        <label>题号 <input id="code" size="20" spellcheck="false" /></label>
-        <button id="btn-load">载入题号</button>
-        <button id="btn-copy">复制题号</button>
-      </div>
+        <div id="board-wrap" class="board-card">
+          <div class="linear-progress" aria-hidden="true"></div>
+          <canvas id="board" tabindex="0" aria-label="盘面"></canvas>
+        </div>
 
-      <div id="status"></div>
-      <div id="message"></div>
+        <div id="message" class="empty" role="status" aria-live="polite"></div>
+        <div id="pad" class="pad"></div>
 
-      <div id="board-wrap">
-        <canvas id="board" tabindex="0"></canvas>
-      </div>
-      <div id="pad" class="toolbar"></div>
+        <div class="action-bar" role="toolbar" aria-label="操作">
+          <button class="action" type="button" id="btn-undo" title="撤销（Ctrl+Z）">
+            <span class="icon" data-icon="undo"></span>撤销
+          </button>
+          <button class="action" type="button" id="btn-redo" title="重做（Ctrl+Y）">
+            <span class="icon" data-icon="redo"></span>重做
+          </button>
+          <span class="action-divider" aria-hidden="true"></span>
+          <button class="action" type="button" id="btn-hint" title="填入下一步">
+            <span class="icon" data-icon="bulb"></span>提示
+          </button>
+          <button class="action" type="button" id="btn-check" title="标出与答案不符之处">
+            <span class="icon" data-icon="checkAll"></span>检查
+          </button>
+          <span class="action-divider" aria-hidden="true"></span>
+          <button class="action" type="button" id="btn-reset" title="清空盘面（可撤销）">
+            <span class="icon" data-icon="restart"></span>重置
+          </button>
+          <button class="action" type="button" id="btn-reveal" title="显示完整答案">
+            <span class="icon" data-icon="eye"></span>答案
+          </button>
+        </div>
+      </section>
 
-      <details open>
-        <summary>规则与操作</summary>
-        <ul id="rules"></ul>
-        <ul id="controls"></ul>
-        <ul>
-          <li>Ctrl+Z 撤销，Ctrl+Y / Ctrl+Shift+Z 重做。</li>
-          <li>题号可分享，相同题号总是生成同一道题；进度自动保存在本机浏览器。</li>
-        </ul>
-      </details>
+      <aside class="side-pane">
+        <section class="card" aria-labelledby="new-title">
+          <h2 class="card-title" id="new-title">新题</h2>
+          <label class="field">
+            <select id="size"></select>
+            <span class="field-label">尺寸</span>
+            <span class="icon" data-icon="expand"></span>
+          </label>
+          <div>
+            <span class="group-label" id="difficulty-label">难度</span>
+            <div id="difficulty" class="segmented" role="radiogroup" aria-labelledby="difficulty-label"></div>
+          </div>
+          <button class="btn filled" type="button" id="btn-new">
+            <span class="icon" data-icon="refresh"></span>
+            换一道题
+          </button>
+        </section>
+
+        <section class="card" aria-labelledby="code-title">
+          <h2 class="card-title" id="code-title">题号</h2>
+          <div>
+            <label class="field">
+              <input id="code" class="code-input" spellcheck="false" autocomplete="off" />
+              <span class="field-label">题号</span>
+              <button class="icon-btn" type="button" id="btn-copy" title="复制题号" aria-label="复制题号">
+                <span class="icon" data-icon="copy"></span>
+              </button>
+            </label>
+            <p class="supporting field-help">相同题号总是生成同一道题，可以发给别人一起玩。</p>
+          </div>
+          <button class="btn tonal" type="button" id="btn-load">
+            <span class="icon" data-icon="play"></span>
+            载入题号
+          </button>
+        </section>
+
+        <section class="card">
+          <label class="switch-row">
+            <span class="switch-text">
+              <span class="switch-title">标出违规之处</span>
+              <span class="supporting">实时把违反规则的地方标红</span>
+            </span>
+            <input type="checkbox" class="switch" id="opt-errors" role="switch" checked />
+          </label>
+        </section>
+
+        <details class="card expander" id="rules-panel" open>
+          <summary>规则与操作<span class="icon" data-icon="expand"></span></summary>
+          <div class="expander-body">
+            <h3>规则</h3>
+            <ul id="rules"></ul>
+            <h3>操作</h3>
+            <ul id="controls"></ul>
+            <ul>
+              <li>Ctrl+Z 撤销，Ctrl+Y / Ctrl+Shift+Z 重做。</li>
+              <li>进度自动保存在本机浏览器。</li>
+            </ul>
+          </div>
+        </details>
+      </aside>
     </main>
+
     <script type="module" src="src/app/play.js"></script>
   </body>
 </html>

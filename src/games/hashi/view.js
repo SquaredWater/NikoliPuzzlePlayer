@@ -91,7 +91,7 @@ export default {
     const drag = ui.drag;
     if (drag && drag.link >= 0) {
       const ok = blockerOf(puzzle, state, drag.link) < 0 || state.b[drag.link] > 0;
-      drawBridge(ctx, puzzle, drag.link, 1, u, ok ? 'rgba(30, 110, 255, 0.3)' : 'rgba(211, 47, 47, 0.3)', u * 0.34);
+      drawBridge(ctx, puzzle, drag.link, 1, u, ok ? COLORS.preview : COLORS.errorPreview, u * 0.34);
     }
 
     const bad = showErrors ? violations(puzzle, state) : { islands: new Set(), links: new Set() };

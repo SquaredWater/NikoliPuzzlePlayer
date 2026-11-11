@@ -1,20 +1,25 @@
 // 各游戏 view 共用的绘制与坐标工具。坐标约定：p = { x, y }，单位为“格”，原点为盘面左上角。
+// 色板与界面（style.css）的主色保持一致，盘面本身是浅色纸面，深色主题下由 CSS 略微压暗。
 
 export const COLORS = {
-  paper: '#fff',
-  ink: '#111',
-  grid: '#ccc',
-  border: '#222',
-  accent: '#1e6eff',
-  given: '#111',
-  entry: '#1e5bd8',
-  error: '#d32f2f',
-  errorFill: '#f4b9b9',
-  shade: '#333',
-  mark: '#888',
-  hint: '#2e7d32',
-  select: 'rgba(30, 110, 255, 0.18)',
-  same: 'rgba(30, 110, 255, 0.08)',
+  paper: '#ffffff',
+  ink: '#1a1b21',
+  grid: '#c5c6d0',
+  border: '#2f3037',
+  accent: '#475d92',
+  given: '#1a1b21',
+  entry: '#3a5bbf',
+  error: '#ba1a1a',
+  errorFill: '#ffdad6',
+  shade: '#33343a',
+  mark: '#8a8b94',
+  hint: '#2f6b2a',
+  select: 'rgba(71, 93, 146, 0.16)',
+  same: 'rgba(71, 93, 146, 0.07)',
+  sameDigit: 'rgba(71, 93, 146, 0.16)',
+  errorSoft: 'rgba(186, 26, 26, 0.14)',
+  preview: 'rgba(71, 93, 146, 0.3)',
+  errorPreview: 'rgba(186, 26, 26, 0.3)',
 };
 
 /** 坐标所在的格子；clamp 为真时夹到盘面内，否则越界返回 null。 */

@@ -16,8 +16,8 @@ export default {
   pad(puzzle, ui) {
     const items = [];
     for (let d = 1; d <= puzzle.width; d++) items.push({ label: String(d), key: String(d) });
-    items.push({ label: '清除', key: 'Delete' });
-    items.push({ label: '笔记', key: 'n', active: ui.notes, title: '切换笔记模式（N）' });
+    items.push({ label: '清除', key: 'Delete', icon: 'backspace' });
+    items.push({ label: '笔记', key: 'n', icon: 'pen', active: ui.notes, title: '切换笔记模式（N）' });
     return items;
   },
 
@@ -36,7 +36,7 @@ export default {
             r === sel.r || c === sel.c || (Math.floor(r / br) === Math.floor(sel.r / br) && Math.floor(c / bc) === Math.floor(sel.c / bc));
           const sameDigit = selDigit && digitAt(puzzle, state, r * n + c) === selDigit;
           if (sameUnit || sameDigit) {
-            ctx.fillStyle = sameDigit ? 'rgba(30, 110, 255, 0.16)' : COLORS.same;
+            ctx.fillStyle = sameDigit ? COLORS.sameDigit : COLORS.same;
             ctx.fillRect(c * u, r * u, u, u);
           }
         }
@@ -70,7 +70,7 @@ export default {
         const color = bad.has(i) && !given ? COLORS.error : given ? COLORS.given : COLORS.entry;
         drawText(ctx, d, c * u + u / 2, r * u + u / 2, u * 0.6, color, !!given);
         if (bad.has(i) && given) {
-          ctx.fillStyle = 'rgba(211, 47, 47, 0.15)';
+          ctx.fillStyle = COLORS.errorSoft;
           ctx.fillRect(c * u, r * u, u, u);
         }
       } else if (state.notes[i]) {

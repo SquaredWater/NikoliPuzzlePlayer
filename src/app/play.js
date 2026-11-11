@@ -5,6 +5,7 @@ import { Session } from '../engine/session.js';
 import { DIFFICULTIES, DIFFICULTY_LABELS } from '../engine/generate.js';
 import { randomSeed } from '../engine/rng.js';
 import { formatCode, getGame, parseCode } from '../games/registry.js';
+import { askConfirm, icon, initUi } from './ui.js';
 
 const PAD = 4;
 const PREFS_KEY = 'nikoli.prefs';
@@ -23,6 +24,7 @@ const els = {
   showErrors: $('opt-errors'),
   undo: $('btn-undo'),
   redo: $('btn-redo'),
+  rulesPanel: $('rules-panel'),
 };
 const ctx = els.canvas.getContext('2d');
 
@@ -40,6 +42,8 @@ let flash = null; // { items, until }
 let unit = 40;
 let lastTick = performance.now();
 let lastSolved = false;
+
+initUi();
 
 // ---------------------------------------------------------------------------
 // 题目生成
@@ -105,8 +109,8 @@ async function startNew(p) {
   }
   save();
   syncSelectors();
-  layout();
   updateUI();
+  layout();
 }
 
 function setSession(s) {
@@ -116,14 +120,50 @@ function setSession(s) {
   input = view.createInput(inputApi);
 }
 
-function confirmDiscard() {
+async function confirmDiscard() {
   if (!session || session.solved || session.moves === 0) return true;
-  return window.confirm('当前题目尚未完成，确定放弃吗？');
+  return askConfirm({ title: '放弃当前题目？', text: '当前题目尚未完成，离开后进度仍会保存在本机。', ok: '放弃' });
 }
 
 function newPuzzleFromSelectors() {
   const [width, height] = els.size.value.split('x').map(Number);
-  startNew({ width, height, difficulty: els.difficulty.value, seed: randomSeed() });
+  startNew({ width, height, difficulty: difficultyValue(), seed: randomSeed() });
+}
+
+// ---------------------------------------------------------------------------
+// 难度分段按钮（值同时反映到 UI 上）
+// ---------------------------------------------------------------------------
+
+function renderDifficulty(value) {
+  els.difficulty.replaceChildren(
+    ...DIFFICULTIES.map((d) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('role', 'radio');
+      btn.dataset.value = d;
+      btn.setAttribute('aria-checked', String(d === value));
+      btn.tabIndex = d === value ? 0 : -1;
+      const check = icon('check');
+      btn.append(check, document.createTextNode(DIFFICULTY_LABELS[d]));
+      btn.addEventListener('click', () => selectDifficulty(d));
+      return btn;
+    }),
+  );
+}
+
+function difficultyValue() {
+  return els.difficulty.querySelector('[aria-checked="true"]')?.dataset.value || 'medium';
+}
+
+async function selectDifficulty(d) {
+  const prev = difficultyValue();
+  if (d === prev) return;
+  renderDifficulty(d);
+  if (!(await confirmDiscard())) {
+    renderDifficulty(prev);
+    return;
+  }
+  newPuzzleFromSelectors();
 }
 
 // ---------------------------------------------------------------------------
@@ -177,8 +217,16 @@ function savePrefs() {
 function layout() {
   if (!session) return;
   const { cols, rows } = view.size(session.puzzle);
-  const availW = els.wrap.clientWidth - PAD * 2;
-  const availH = Math.max(260, window.innerHeight - els.canvas.getBoundingClientRect().top - 24);
+  const styles = getComputedStyle(els.wrap);
+  const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+  const padBottom = parseFloat(styles.paddingBottom);
+  // 盘面卡片会收缩贴合画布，所以可用宽度取外层面板
+  const pane = els.wrap.parentElement;
+  const availW = Math.max(160, pane.clientWidth - padX - PAD * 2);
+  // 盘面下方还有消息条、数字键盘和操作栏，把它们的高度从视口里预留出来
+  const below = pane.getBoundingClientRect().bottom - els.wrap.getBoundingClientRect().bottom + padBottom;
+  const top = els.canvas.getBoundingClientRect().top + window.scrollY;
+  const availH = Math.max(240, window.innerHeight - top - below - 16 - PAD * 2);
   unit = Math.max(16, Math.min(56, Math.floor(availW / cols), Math.floor(availH / rows)));
   const dpr = window.devicePixelRatio || 1;
   const cssW = Math.ceil(cols * unit) + PAD * 2;
@@ -195,6 +243,7 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
   els.canvas.classList.toggle('busy', generating);
+  els.wrap.classList.toggle('busy', generating);
   if (!session) return;
   ctx.setTransform(dpr, 0, 0, dpr, PAD * dpr, PAD * dpr);
   ctx.save();
@@ -208,7 +257,11 @@ function draw() {
     solved: session.solved,
   });
   ctx.restore();
+  // 闪烁的标记消失后重画一次，清掉红色标记
+  clearTimeout(flashTimer);
+  if (flash) flashTimer = setTimeout(draw, Math.max(0, flash.until - performance.now()) + 60);
 }
+let flashTimer = 0;
 
 // ---------------------------------------------------------------------------
 // 界面状态
@@ -220,27 +273,36 @@ function formatTime(ms) {
 }
 
 function setMessage(text, kind = '') {
-  els.message.textContent = text;
-  els.message.className = kind;
+  els.message.replaceChildren();
+  els.message.className = kind || 'empty';
+  if (!text) return;
+  els.message.append(icon(kind === 'success' ? 'checkAll' : kind === 'error' ? 'error' : 'info'), document.createTextNode(text));
+}
+
+function statusChip(text, iconName, extra = '') {
+  const chip = document.createElement('span');
+  chip.className = `chip${extra ? ` ${extra}` : ''}`;
+  if (iconName) chip.append(icon(iconName));
+  chip.append(document.createTextNode(text));
+  return chip;
 }
 
 function updateStatus() {
   if (!session) {
-    els.status.textContent = '';
+    els.status.replaceChildren();
     return;
   }
   const p = session.puzzle;
-  const parts = [
-    `${p.width}×${p.height}`,
-    DIFFICULTY_LABELS[p.difficulty],
-    `用时 ${formatTime(session.elapsedMs)}`,
-    `步数 ${session.moves}`,
-    `提示 ${session.hintsUsed}`,
+  const chips = [
+    statusChip(`${p.width}×${p.height} · ${DIFFICULTY_LABELS[p.difficulty]}`, 'grid'),
+    statusChip(formatTime(session.elapsedMs), 'timer', 'tonal'),
+    statusChip(`步数 ${session.moves}`),
+    statusChip(`提示 ${session.hintsUsed}`),
   ];
   const progress = session.progress();
-  if (progress) parts.push(progress);
-  if (session.revealed) parts.push('已看答案');
-  els.status.textContent = parts.join(' · ');
+  if (progress) chips.push(statusChip(progress));
+  if (session.revealed) chips.push(statusChip('已看答案', 'eye', 'warn'));
+  els.status.replaceChildren(...chips);
 }
 
 function renderPad() {
@@ -248,9 +310,13 @@ function renderPad() {
   if (!session || !view.pad) return;
   for (const item of view.pad(session.puzzle, input.ui)) {
     const btn = document.createElement('button');
-    btn.textContent = item.label;
+    btn.type = 'button';
+    btn.className = 'pad-key';
     if (item.title) btn.title = item.title;
     if (item.active) btn.classList.add('active');
+    if (item.icon) btn.append(icon(item.icon));
+    btn.append(document.createTextNode(item.label));
+    if (item.icon || item.label.length > 1) btn.classList.add('wide');
     btn.disabled = generating || session.solved;
     btn.addEventListener('click', () => {
       if (inputLocked()) return;
@@ -277,7 +343,7 @@ function syncSelectors() {
   const value = `${width}x${height}`;
   if (![...els.size.options].some((o) => o.value === value)) els.size.add(new Option(`${width}×${height}`, value));
   els.size.value = value;
-  els.difficulty.value = difficulty;
+  renderDifficulty(difficulty);
 }
 
 function afterAction(message) {
@@ -373,6 +439,7 @@ function doRedo() {
 
 document.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+  if (document.getElementById('app-dialog')?.open) return;
   const key = e.key.toLowerCase();
   if (e.ctrlKey || e.metaKey) {
     if (key === 'z' && !e.shiftKey) {
@@ -394,16 +461,14 @@ document.addEventListener('keydown', (e) => {
 els.undo.addEventListener('click', doUndo);
 els.redo.addEventListener('click', doRedo);
 
-$('btn-new').addEventListener('click', () => {
-  if (confirmDiscard()) newPuzzleFromSelectors();
+$('btn-new').addEventListener('click', async () => {
+  if (await confirmDiscard()) newPuzzleFromSelectors();
 });
 
-for (const sel of [els.size, els.difficulty]) {
-  sel.addEventListener('change', () => {
-    if (confirmDiscard()) newPuzzleFromSelectors();
-    else syncSelectors();
-  });
-}
+els.size.addEventListener('change', async () => {
+  if (await confirmDiscard()) newPuzzleFromSelectors();
+  else syncSelectors();
+});
 
 $('btn-reset').addEventListener('click', () => {
   if (!session || generating) return;
@@ -416,7 +481,6 @@ $('btn-check').addEventListener('click', () => {
   if (wrong.length) {
     flash = { items: wrong, until: performance.now() + 2500 };
     setMessage(`有 ${wrong.length} 处与答案不符（红色标出）`, 'error');
-    setTimeout(draw, 2550);
   } else {
     setMessage(session.solved ? '已经完成了！' : '目前没有发现错误');
   }
@@ -432,14 +496,14 @@ $('btn-hint').addEventListener('click', () => {
   afterAction(res ? `提示：${res.message || '已填入一步'}` : '没有可以提示的了');
 });
 
-$('btn-reveal').addEventListener('click', () => {
+$('btn-reveal').addEventListener('click', async () => {
   if (!session || generating) return;
-  if (!window.confirm('确定显示完整答案吗？')) return;
+  if (!(await askConfirm({ title: '显示完整答案？', text: '看答案后本题仍可撤销恢复，但会计入“已看答案”。', ok: '显示答案' }))) return;
   session.reveal();
   afterAction('已显示答案（可撤销）');
 });
 
-function loadCode(text) {
+async function loadCode(text) {
   const parsed = parseCode(text, meta.id);
   if (parsed.error) {
     setMessage(parsed.error, 'error');
@@ -449,7 +513,7 @@ function loadCode(text) {
     location.href = `play.html?game=${parsed.game}&code=${encodeURIComponent(text.trim())}`;
     return;
   }
-  if (!confirmDiscard()) return;
+  if (!(await confirmDiscard())) return;
   const { width, height, difficulty, seed } = parsed;
   startNew({ width, height, difficulty, seed });
 }
@@ -468,6 +532,13 @@ $('btn-copy').addEventListener('click', async () => {
     els.code.select();
     setMessage('无法访问剪贴板，请手动复制题号');
   }
+});
+
+$('btn-rules').addEventListener('click', () => {
+  const panel = els.rulesPanel;
+  panel.open = true;
+  panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  panel.querySelector('summary').focus({ preventScroll: true });
 });
 
 els.showErrors.addEventListener('change', () => {
@@ -508,7 +579,10 @@ function fillList(el, lines) {
 
 async function init() {
   document.title = `${meta.name} ${meta.en}`;
-  els.title.textContent = `${meta.name} ${meta.en}`;
+  const en = document.createElement('span');
+  en.className = 'app-bar-subtitle';
+  en.textContent = meta.en;
+  els.title.replaceChildren(meta.name, en);
   [rules, view] = await Promise.all([
     import(`../games/${meta.id}/index.js`).then((m) => m.default),
     import(`../games/${meta.id}/view.js`).then((m) => m.default),
@@ -516,9 +590,8 @@ async function init() {
   fillList($('rules'), meta.rules);
   fillList($('controls'), view.controls || []);
   for (const [w, h] of meta.sizes) els.size.add(new Option(`${w}×${h}`, `${w}x${h}`));
-  for (const d of DIFFICULTIES) els.difficulty.add(new Option(DIFFICULTY_LABELS[d], d));
+  renderDifficulty('medium');
   els.size.value = `${meta.defaultSize[0]}x${meta.defaultSize[1]}`;
-  els.difficulty.value = 'medium';
   loadPrefs();
 
   const code = params.get('code');
@@ -527,7 +600,7 @@ async function init() {
     history.replaceState(null, '', `play.html?game=${meta.id}`);
     const parsed = parseCode(code, meta.id);
     if (!parsed.error && parsed.game === meta.id && (!hasSave || code.trim() !== session.puzzle.code)) {
-      if (confirmDiscard()) {
+      if (await confirmDiscard()) {
         const { width, height, difficulty, seed } = parsed;
         return startNew({ width, height, difficulty, seed });
       }
@@ -535,8 +608,8 @@ async function init() {
   }
   if (hasSave) {
     syncSelectors();
-    layout();
     updateUI();
+    layout();
     setMessage(session.solved ? '本题已完成，可以换题。' : '已恢复上次的进度');
   } else {
     const [width, height] = meta.defaultSize;

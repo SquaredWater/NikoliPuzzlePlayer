@@ -146,8 +146,9 @@ await sleep(50);
 console.log('检查:', await text('message'));
 await shot('hint');
 
-await evaluate(`window.confirm = () => true`);
 await click('btn-reveal');
+await sleep(150);
+await evaluate(`document.querySelector('#app-dialog .btn.filled').click()`);
 await sleep(100);
 console.log('显示答案:', await text('message'));
 await shot('solved');

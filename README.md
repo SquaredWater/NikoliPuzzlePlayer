@@ -78,7 +78,7 @@ server.js             零依赖静态服务器
 src/engine/           与平台无关的公共部分：逻辑推理引擎、生成工具、对局会话、随机数
 src/games/<id>/       各谜题：index.js 规则与生成（可在 Node 中运行），view.js 绘制与输入
 src/games/registry.js 谜题列表与题号编码
-src/app/              浏览器外壳：主页、游戏页、Web Worker、绘制工具
+src/app/              浏览器外壳：主页、游戏页、Web Worker、绘制工具、界面组件（图标、主题、对话框）
 test/                 单元测试（node:test）
 scripts/              性能统计与浏览器冒烟测试
 docs/GAME_DEV.md      新增谜题的开发指南

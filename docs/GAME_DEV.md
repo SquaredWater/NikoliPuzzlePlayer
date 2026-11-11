@@ -81,7 +81,7 @@ export default {
   size(puzzle) → { cols, rows },       // 盘面占多少“格”（可含小数，用于留边）
   draw(ctx, { puzzle, state, unit, showErrors, wrong, ui, solved }),
   createInput(api) → { ui, down(p, ev), move?(p, ev), up?(p, ev), cancel?(), key?(ev) → boolean },
-  pad?(puzzle, ui) → [{ label, key, active?, title? }],   // 可选：盘面下方的按钮，点击时以 key(ev) 方式传入
+  pad?(puzzle, ui) → [{ label, key, icon?, active?, title? }],   // 可选：盘面下方的按钮，点击时以 key(ev) 方式传入；icon 为 src/app/ui.js 中的图标名
 };
 ```
 
@@ -91,7 +91,7 @@ export default {
   键盘：`ev = { key, code, shiftKey, fromPad }`，处理了返回 `true`。
 - `api`：`puzzle()`、`state()`、`apply(newState, message?)`（提交新状态，返回是否变化）、`redraw()`、`message(text, kind?)`。
 - 交互的临时状态（选中格、拖动中等）放在 `ui` 里，由 `draw` 读取。
-- 共用工具：`src/app/draw.js`（网格、文字、圆、叉、最近格线边等）、`src/app/digits.js`（数字键、笔记）。
+- 共用工具：`src/app/draw.js`（网格、文字、圆、叉、最近格线边等；颜色请用其中的 `COLORS`，与界面主题一致）、`src/app/digits.js`（数字键、笔记）。
 
 ## 3. 测试
 

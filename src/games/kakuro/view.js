@@ -39,8 +39,8 @@ export default {
   pad(puzzle, ui) {
     const items = [];
     for (let d = 1; d <= 9; d++) items.push({ label: String(d), key: String(d) });
-    items.push({ label: '清除', key: 'Delete' });
-    items.push({ label: '笔记', key: 'n', active: ui.notes, title: '切换笔记模式（N）' });
+    items.push({ label: '清除', key: 'Delete', icon: 'backspace' });
+    items.push({ label: '笔记', key: 'n', icon: 'pen', active: ui.notes, title: '切换笔记模式（N）' });
     return items;
   },
 

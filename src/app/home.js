@@ -1,62 +1,68 @@
 import { GAMES, parseCode } from '../games/registry.js';
 import { DIFFICULTY_LABELS } from '../engine/generate.js';
+import { icon, initUi } from './ui.js';
+
+initUi();
 
 function savedInfo(id) {
   try {
     const data = JSON.parse(localStorage.getItem(`nikoli.save.${id}`));
-    if (!data || !data.puzzle) return '';
+    if (!data || !data.puzzle) return null;
     const p = data.puzzle;
-    const what = `${p.width}×${p.height} ${DIFFICULTY_LABELS[p.difficulty] || ''}`;
-    return data.solved ? `上次：${what}（已完成）` : `进行中：${what}`;
+    const what = `${p.width}×${p.height} ${DIFFICULTY_LABELS[p.difficulty] || ''}`.trim();
+    return data.solved ? { done: true, text: `已完成 ${what}` } : { done: false, text: `继续 ${what}` };
   } catch {
-    return '';
+    return null;
   }
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 const list = document.getElementById('games');
-for (const game of GAMES) {
-  const card = document.createElement('a');
-  card.className = 'game-card';
+GAMES.forEach((game, index) => {
+  const card = el('a', 'game-card');
   card.href = `play.html?game=${game.id}`;
 
-  const title = document.createElement('div');
-  title.className = 'game-title';
-  title.textContent = game.name;
-  const en = document.createElement('span');
-  en.className = 'game-en';
-  en.textContent = game.en;
-  title.append(' ', en);
+  const avatar = el('span', 'game-avatar', game.prefix);
+  avatar.style.setProperty('--hue', String(Math.round(220 + (index * 360) / GAMES.length) % 360));
+  avatar.setAttribute('aria-hidden', 'true');
+  const names = el('div');
+  names.append(el('div', 'game-title', game.name), el('div', 'game-en', game.en));
+  const head = el('div', 'game-head');
+  head.append(avatar, names);
 
-  const intro = document.createElement('div');
-  intro.className = 'game-intro';
-  intro.textContent = game.intro;
-
-  const sizes = document.createElement('div');
-  sizes.className = 'game-meta';
-  sizes.textContent = `尺寸：${game.sizes.map(([w, h]) => `${w}×${h}`).join(' / ')}`;
-
-  card.append(title, intro, sizes);
+  const foot = el('div', 'game-foot');
+  foot.append(el('span', 'game-meta', game.sizes.map(([w, h]) => `${w}×${h}`).join(' · ')));
   const info = savedInfo(game.id);
   if (info) {
-    const saved = document.createElement('div');
-    saved.className = 'game-saved';
-    saved.textContent = info;
-    card.append(saved);
+    const saved = el('span', `game-saved${info.done ? ' done' : ''}`);
+    saved.append(icon(info.done ? 'check' : 'bookmark'), info.text);
+    foot.append(saved);
   }
-  list.append(card);
-}
 
+  card.append(head, el('p', 'game-intro', game.intro), foot);
+  list.append(card);
+});
+
+const form = document.getElementById('code-form');
 const codeInput = document.getElementById('code');
 const codeError = document.getElementById('code-error');
-function go() {
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
   const parsed = parseCode(codeInput.value);
   if (parsed.error) {
     codeError.textContent = parsed.error;
+    codeInput.setAttribute('aria-invalid', 'true');
     return;
   }
   location.href = `play.html?game=${parsed.game}&code=${encodeURIComponent(codeInput.value.trim())}`;
-}
-document.getElementById('btn-go').addEventListener('click', go);
-codeInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') go();
+});
+codeInput.addEventListener('input', () => {
+  codeError.textContent = '';
+  codeInput.removeAttribute('aria-invalid');
 });
