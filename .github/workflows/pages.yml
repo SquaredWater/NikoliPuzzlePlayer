@@ -27,10 +27,9 @@ jobs:
 
       - run: npm test
 
-      - name: Assemble site
-        run: |
-          mkdir -p dist
-          cp -r index.html play.html style.css .nojekyll src dist/
+      # 组装 dist：只带上页面需要的文件，并给静态资源加上 ?v=<提交 SHA> 的版本号。
+      # Pages 对静态文件固定缓存 10 分钟，加版本号后新页面一定会取到新的 CSS / JS。
+      - run: node scripts/build.js dist "$(git rev-parse --short=12 HEAD)"
 
       - uses: actions/configure-pages@v5
 
