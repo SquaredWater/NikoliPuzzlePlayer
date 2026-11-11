@@ -5,10 +5,11 @@
 // 加了版本号以后，新的页面一定会去取新的 CSS 和 JS，不会出现“HTML 是新的、脚本还是旧的”。
 // 版本号默认取 GITHUB_SHA；本地构建时用当前时间，也可以用第二个参数指定。
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const OUT = process.argv[2] || join(ROOT, 'dist');
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const OUT = resolve(process.argv[2] || join(ROOT, 'dist'));
 const VERSION = process.argv[3] || process.env.GITHUB_SHA?.slice(0, 12) || String(Date.now());
 const FILES = ['index.html', 'play.html', 'style.css', '.nojekyll'];
 const DIRS = ['src'];
