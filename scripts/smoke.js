@@ -19,11 +19,15 @@ const chromePath = process.env.CHROME || defaultChrome;
 const outDir = join(tmpdir(), 'nikoli-smoke');
 mkdirSync(outDir, { recursive: true });
 const debugPort = 9300 + Math.floor(Math.random() * 600);
+// 视口尺寸可用 WIDTH / HEIGHT 覆盖，用来检查手机、平板等布局（截图文件名会带上尺寸）
+const width = Number(process.env.WIDTH || 1000);
+const height = Number(process.env.HEIGHT || 1100);
+const tag = `${width}x${height}`;
 
 const chrome = spawn(chromePath, [
   '--headless=new',
   `--remote-debugging-port=${debugPort}`,
-  '--window-size=1000,1100',
+  `--window-size=${width},${height}`,
   `--user-data-dir=${join(outDir, `profile-${debugPort}`)}`,
   'about:blank',
 ]);
@@ -72,9 +76,15 @@ const evaluate = async (expression) => {
 };
 const shot = async (name) => {
   const r = await send('Page.captureScreenshot');
-  const file = join(outDir, `${game}-${name}.png`);
+  const file = join(outDir, `${game}-${tag}-${name}.png`);
   writeFileSync(file, Buffer.from(r.result.data, 'base64'));
   console.log(`截图: ${file}`);
+};
+/** 想尽量贴近手机时用：DEVICE=1 会打开移动端视口与触摸模拟。 */
+const emulate = async () => {
+  if (!process.env.DEVICE) return;
+  await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 2, mobile: true });
+  await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 };
 const text = (id) => evaluate(`document.getElementById('${id}') ? document.getElementById('${id}').textContent : ''`);
 const click = (id) => evaluate(`document.getElementById('${id}').click()`);
@@ -99,6 +109,7 @@ const waitReady = async () => {
 
 await send('Runtime.enable');
 await send('Page.enable');
+await emulate();
 await evaluate(`localStorage.clear()`);
 
 await send('Page.navigate', { url: `http://localhost:${port}/index.html` });

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#faf8ff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#121318" media="(prefers-color-scheme: dark)" />
     <title>谜题</title>
@@ -40,30 +40,32 @@
           <canvas id="board" tabindex="0" aria-label="盘面"></canvas>
         </div>
 
-        <div id="message" class="empty" role="status" aria-live="polite"></div>
-        <div id="pad" class="pad"></div>
+        <div id="board-tools" class="board-tools">
+          <div id="message" class="empty" role="status" aria-live="polite"></div>
+          <div id="pad" class="pad"></div>
 
-        <div class="action-bar" role="toolbar" aria-label="操作">
-          <button class="action" type="button" id="btn-undo" title="撤销（Ctrl+Z）">
-            <span class="icon" data-icon="undo"></span>撤销
-          </button>
-          <button class="action" type="button" id="btn-redo" title="重做（Ctrl+Y）">
-            <span class="icon" data-icon="redo"></span>重做
-          </button>
-          <span class="action-divider" aria-hidden="true"></span>
-          <button class="action" type="button" id="btn-hint" title="填入下一步">
-            <span class="icon" data-icon="bulb"></span>提示
-          </button>
-          <button class="action" type="button" id="btn-check" title="标出与答案不符之处">
-            <span class="icon" data-icon="checkAll"></span>检查
-          </button>
-          <span class="action-divider" aria-hidden="true"></span>
-          <button class="action" type="button" id="btn-reset" title="清空盘面（可撤销）">
-            <span class="icon" data-icon="restart"></span>重置
-          </button>
-          <button class="action" type="button" id="btn-reveal" title="显示完整答案">
-            <span class="icon" data-icon="eye"></span>答案
-          </button>
+          <div class="action-bar" role="toolbar" aria-label="操作">
+            <button class="action" type="button" id="btn-undo" title="撤销（Ctrl+Z）">
+              <span class="icon" data-icon="undo"></span>撤销
+            </button>
+            <button class="action" type="button" id="btn-redo" title="重做（Ctrl+Y）">
+              <span class="icon" data-icon="redo"></span>重做
+            </button>
+            <span class="action-divider" aria-hidden="true"></span>
+            <button class="action" type="button" id="btn-hint" title="填入下一步">
+              <span class="icon" data-icon="bulb"></span>提示
+            </button>
+            <button class="action" type="button" id="btn-check" title="标出与答案不符之处">
+              <span class="icon" data-icon="checkAll"></span>检查
+            </button>
+            <span class="action-divider" aria-hidden="true"></span>
+            <button class="action" type="button" id="btn-reset" title="清空盘面（可撤销）">
+              <span class="icon" data-icon="restart"></span>重置
+            </button>
+            <button class="action" type="button" id="btn-reveal" title="显示完整答案">
+              <span class="icon" data-icon="eye"></span>答案
+            </button>
+          </div>
         </div>
       </section>
 
@@ -103,7 +105,7 @@
           </button>
         </section>
 
-        <section class="card">
+        <section class="card card-wide">
           <label class="switch-row">
             <span class="switch-text">
               <span class="switch-title">标出违规之处</span>
@@ -113,7 +115,7 @@
           </label>
         </section>
 
-        <details class="card expander" id="rules-panel" open>
+        <details class="card card-wide expander" id="rules-panel" open>
           <summary>规则与操作<span class="icon" data-icon="expand"></span></summary>
           <div class="expander-body">
             <h3>规则</h3>

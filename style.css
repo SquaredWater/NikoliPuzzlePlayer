@@ -290,7 +290,7 @@ select {
   align-items: center;
   gap: 4px;
   height: 64px;
-  padding: 0 8px 0 4px;
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(4px, env(safe-area-inset-left));
   background: var(--surface);
   transition: background-color 200ms var(--ease);
 }
@@ -719,7 +719,7 @@ details.expander {
 .home {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0 16px 48px;
+  padding: 0 max(16px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 .hero {
@@ -909,14 +909,25 @@ details.expander {
   gap: 24px;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 8px 16px 32px;
+  padding: 8px max(16px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 .board-pane {
+  --card-pad: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+}
+
+/* 消息、数字键盘和操作栏；横屏手机上会移到盘面右侧（见文末的响应式规则） */
+.board-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
   min-width: 0;
 }
 
@@ -930,7 +941,7 @@ details.expander {
   .play-layout {
     grid-template-columns: minmax(0, 1fr) 340px;
     align-items: start;
-    padding: 8px 24px 24px;
+    padding: 8px max(24px, env(safe-area-inset-right)) 24px max(24px, env(safe-area-inset-left));
   }
 
   .side-pane {
@@ -950,7 +961,7 @@ details.expander {
 .board-card {
   position: relative;
   max-width: 100%;
-  padding: 12px;
+  padding: var(--card-pad, 12px);
   border-radius: 16px;
   background: #fff;
   box-shadow: var(--shadow-1);
@@ -1149,18 +1160,140 @@ details.expander {
   background: var(--outline-variant);
 }
 
-@media (max-width: 420px) {
+/* ------------------------------------------------------------ 响应式
+   四种布局（与 src/app/play.js 的 layout() 配合，改断点时两边要一起改）：
+     宽屏   ≥ 900px：盘面在左，设置面板在右（见上面的 .play-layout）
+     平板   600–899px：单列，设置面板的卡片排成两列
+     手机   ≤ 600px：单列，压缩各处留白，让盘面尽量占满屏宽
+     横屏手机  横向且高度 ≤ 560px：盘面在左，状态 / 键盘 / 操作栏在右 */
+
+@media (min-width: 700px) {
+  /* 够宽时数字键盘排成一行，给盘面多留一行的高度 */
+  .pad {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .side-pane {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .side-pane > .card-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 手机竖屏与横屏共用的紧凑样式 */
+@media (max-width: 600px), (orientation: landscape) and (max-height: 560px) {
+  .app-bar {
+    height: 56px;
+  }
+
+  .app-bar-title {
+    font-size: 20px;
+  }
+
+  .play-layout {
+    gap: 16px;
+    padding-top: 4px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+
+  .board-pane {
+    --card-pad: 6px;
+    gap: 8px;
+  }
+
+  .board-tools {
+    gap: 8px;
+  }
+
+  .board-card {
+    border-radius: 12px;
+  }
+
+  /* 状态标签排成一行，放不下时左右滑动；首尾的 auto 外边距让它在放得下时居中 */
+  .status-bar {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    max-width: 100%;
+    min-height: 28px;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .status-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .status-bar > :first-child {
+    margin-left: auto;
+  }
+
+  .status-bar > :last-child {
+    margin-right: auto;
+  }
+
+  .status-bar .chip {
+    flex: none;
+    gap: 4px;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .status-bar .chip .icon {
+    width: 16px;
+    height: 16px;
+    margin-left: -2px;
+  }
+
+  #message {
+    min-height: 32px;
+    padding: 4px 12px;
+    font-size: 13px;
+  }
+
+  /* 数字键每行 6 个；“清除”“笔记”平分剩下的宽度 */
+  .pad {
+    width: 100%;
+    max-width: 420px;
+    gap: 6px;
+  }
+
+  .pad-key {
+    flex: 0 0 calc((100% - 30px) / 6);
+    min-width: 0;
+    height: 44px;
+    padding: 0;
+  }
+
+  .pad-key.wide {
+    flex: 1 1 0;
+    min-width: 76px;
+    padding: 0 8px;
+  }
+
+  .action-bar {
+    width: 100%;
+    max-width: 420px;
+    padding: 2px 4px;
+  }
+
   .action {
-    width: 48px;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    height: 52px;
   }
 
   .action-divider {
     display: none;
-  }
-
-  .pad-key {
-    min-width: 42px;
-    height: 44px;
   }
 }
 
@@ -1168,6 +1301,20 @@ details.expander {
   .hero h1 {
     font-size: 26px;
     line-height: 34px;
+  }
+
+  /* 题号输入框和“开始”按钮留在同一行 */
+  .code-entry .field {
+    flex-basis: 180px;
+  }
+
+  .code-entry .btn {
+    padding: 0 20px;
+  }
+
+  /* 步数在完成时还会报一次，窄屏上先让位给其他状态 */
+  .status-bar .chip.minor {
+    display: none;
   }
 
   .logo {
@@ -1183,6 +1330,60 @@ details.expander {
 
   .game-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 横屏手机：高度不够把盘面和按键上下叠放，改成左右并排。
+   这条规则要放在宽屏规则之后——大屏手机横过来宽度会超过 900px。 */
+@media (orientation: landscape) and (max-height: 560px) {
+  .app-bar {
+    position: static;
+    height: 48px;
+  }
+
+  .play-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 0;
+  }
+
+  .board-pane {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "board status"
+      "board tools";
+    align-items: start;
+    justify-items: center;
+    gap: 8px 16px;
+  }
+
+  .status-bar {
+    grid-area: status;
+  }
+
+  .board-card {
+    grid-area: board;
+  }
+
+  .board-tools {
+    grid-area: tools;
+  }
+
+  /* 右侧一栏里消息不占位，盘面不会因此跳动 */
+  #message.empty {
+    display: none;
+  }
+
+  .side-pane {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    align-items: start;
+  }
+
+  .side-pane > .card-wide {
+    grid-column: 1 / -1;
   }
 }
 
