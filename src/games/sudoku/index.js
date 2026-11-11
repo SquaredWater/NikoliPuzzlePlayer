@@ -78,26 +78,46 @@ export function buildModel(n, givens) {
   const N = n * n;
 
   // 一级：已确定格子排除同行列宫；某数字在某单元只剩一个位置
+  // D.aux[cell] = 1 表示该确定格的数字已从同行列宫排除过。候选只减不增，重复排除不会有新变化，
+  // 所以跳过它们与全量扫描结果完全相同。状态放在 D 上（随 clone 复制），不能放在模型里。
   const nakedSingles = (D) => {
+    const done = D.aux || (D.aux = new Uint8Array(N));
     let changed = false;
     for (let cell = 0; cell < N; cell++) {
       const d = D.dom[cell];
-      if (d & (d - 1)) continue;
+      if (d & (d - 1) || done[cell]) continue;
       for (const p of L.peers[cell]) if (D.restrict(p, ~d)) changed = true;
       if (D.bad) return true;
+      done[cell] = 1;
     }
     return changed;
   };
 
   const hiddenSingles = (D) => {
+    const dom = D.dom;
     let changed = false;
     for (const unit of L.units) {
+      // 先用位运算看这个单元有没有事可做：once/twice = 出现至少一次/两次的数字，fixed = 已确定的数字
+      let once = 0;
+      let twice = 0;
+      let fixed = 0;
+      for (const cell of unit) {
+        const d = dom[cell];
+        twice |= once & d;
+        once |= d;
+        if (!(d & (d - 1))) fixed |= d;
+      }
+      if (once !== L.full) {
+        D.bad = true;
+        return true;
+      }
+      if (!(once & ~twice & ~fixed)) continue;
       for (let k = 0; k < n; k++) {
         const bit = 1 << k;
         let where = -1;
         let count = 0;
         for (const cell of unit) {
-          if (D.dom[cell] & bit) {
+          if (dom[cell] & bit) {
             where = cell;
             if (++count > 1) break;
           }
@@ -106,7 +126,7 @@ export function buildModel(n, givens) {
           D.bad = true;
           return true;
         }
-        if (count === 1 && D.dom[where] !== bit) {
+        if (count === 1 && dom[where] !== bit) {
           D.set(where, k);
           changed = true;
         }
@@ -138,22 +158,39 @@ export function buildModel(n, givens) {
   };
 
   // 二级：显性数对 / 三数组
+  const open = new Int32Array(n);
+  const pool = new Int32Array(n);
   const nakedSubsets = (D) => {
+    const dom = D.dom;
     let changed = false;
     for (const unit of L.units) {
-      const open = unit.filter((c) => popcount(D.dom[c]) > 1);
+      let nOpen = 0;
+      for (const c of unit) if (dom[c] & (dom[c] - 1)) open[nOpen++] = c;
+      const strip = (a, b, e, mask) => {
+        for (let q = 0; q < nOpen; q++) {
+          const c = open[q];
+          if (c !== a && c !== b && c !== e && D.restrict(c, ~mask)) changed = true;
+        }
+      };
       for (let size = 2; size <= 3; size++) {
-        const pool = open.filter((c) => popcount(D.dom[c]) <= size);
-        const pick = (start, chosen, mask) => {
-          if (popcount(mask) > size) return;
-          if (chosen.length === size) {
-            if (popcount(mask) !== size) return;
-            for (const c of open) if (!chosen.includes(c) && D.restrict(c, ~mask)) changed = true;
-            return;
+        let nPool = 0;
+        for (let q = 0; q < nOpen; q++) if (popcount(dom[open[q]]) <= size) pool[nPool++] = open[q];
+        for (let i = 0; i < nPool; i++) {
+          const m1 = dom[pool[i]];
+          if (popcount(m1) > size) continue;
+          for (let j = i + 1; j < nPool; j++) {
+            const m2 = m1 | dom[pool[j]];
+            if (popcount(m2) > size) continue;
+            if (size === 2) {
+              if (popcount(m2) === 2) strip(pool[i], pool[j], -1, m2);
+              continue;
+            }
+            for (let k = j + 1; k < nPool; k++) {
+              const m3 = m2 | dom[pool[k]];
+              if (popcount(m3) === 3) strip(pool[i], pool[j], pool[k], m3);
+            }
           }
-          for (let i = start; i < pool.length; i++) pick(i + 1, [...chosen, pool[i]], mask | D.dom[pool[i]]);
-        };
-        pick(0, [], 0);
+        }
         if (changed) return true;
       }
     }

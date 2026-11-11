@@ -298,13 +298,24 @@ export function buildModel(W, H, clues, { shapes = true, budget = null } = {}) {
     const dom = D.dom;
     let changed = false;
     for (const i of blocks) {
-      const cells = [i, i + 1, i + W, i + W + 1];
+      const a = i;
+      const b = i + 1;
+      const c = i + W;
+      const e = i + W + 1;
       let blacks = 0;
       let open = -1;
-      for (const x of cells) {
-        if (dom[x] === BLACK) blacks++;
-        else if (dom[x] === ANY) open = open < 0 ? x : -2;
-      }
+      let t = dom[a];
+      if (t === BLACK) blacks++;
+      else if (t === ANY) open = a;
+      t = dom[b];
+      if (t === BLACK) blacks++;
+      else if (t === ANY) open = open < 0 ? b : -2;
+      t = dom[c];
+      if (t === BLACK) blacks++;
+      else if (t === ANY) open = open < 0 ? c : -2;
+      t = dom[e];
+      if (t === BLACK) blacks++;
+      else if (t === ANY) open = open < 0 ? e : -2;
       if (blacks === 4) {
         D.bad = true;
         return true;

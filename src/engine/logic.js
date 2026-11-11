@@ -36,11 +36,15 @@ export class Domains {
     this.dom = dom;
     this.bad = false;
     this.order = trackOrder ? [] : null;
+    // 模型私有的增量状态（TypedArray，可选）。规则若想记住“哪些已经处理过”，必须放在这里而不是模型闭包里：
+    // 试探和计数会克隆 Domains，各个副本的进度互不相同。
+    this.aux = null;
   }
 
   clone() {
     const d = new Domains(this.dom.slice());
     d.bad = this.bad;
+    if (this.aux) d.aux = this.aux.slice();
     return d;
   }
 
@@ -83,7 +87,12 @@ export class Domains {
   }
 
   values() {
-    return Int32Array.from(this.dom, (d) => (isSingle(d) ? lowBit(d) : -1));
+    const out = new Int32Array(this.dom.length);
+    for (let v = 0; v < out.length; v++) {
+      const d = this.dom[v];
+      out[v] = isSingle(d) ? lowBit(d) : -1;
+    }
+    return out;
   }
 }
 
